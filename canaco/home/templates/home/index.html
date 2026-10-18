@@ -1,13 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
- <meta charset="UTF-8">
- <meta name="viewport"
-content="width=device-width, initialscale=1.0">
- <title>Document</title>
-</head>
-<body>
- <h1> Estas en la página index
-bienvenidos</h1>
-</body>
-</html>
+{% extends 'home/partials/base.html' %}
+{% load static %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<section class="home-carousel-section home-welcome-section bg-light">
+  {% if destacada %}
+    <a href="{% url 'home:noticia_detalle' destacada.pk %}" class="home-carousel-link home-welcome-link">
+      {% if destacada.imagen_portada %}
+        <img src="{{ destacada.imagen_portada.display_url }}" class="home-carousel-image home-welcome-image" alt="{{ destacada.titulo }}">
+      {% else %}
+        <img src="{% static 'images/hero_1.jpg' %}" class="home-carousel-image home-welcome-image" alt="{{ destacada.titulo }}">
+      {% endif %}
+      <div class="home-carousel-caption home-welcome-caption text-start">
+        <span>{{ destacada.createdat|date:"d M Y" }}</span>
+        <h2>{{ destacada.titulo }}</h2>
+        <p>{{ destacada.resumen }}</p>
+      </div>
+    </a>
+  {% else %}
+    <div class="container py-5"><p class="mb-0">Todavía no hay noticias publicadas.</p></div>
+  {% endif %}
+</section>
+
+<section class="section recent-news-section">
+  <div class="container">
+    <div class="row mb-4 justify-content-center">
+      <div class="col-lg-8 text-center">
+        <h2 class="posts-entry-title">Noticias recientes</h2>
+        <a href="{% url 'home:categoria' %}" class="read-more">Ver noticias</a>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      {% for noticia in publicaciones %}
+        <div class="col-lg-4 mb-4">
+          <div class="post-entry-alt">
+            <a href="{% url 'home:noticia_detalle' noticia.pk %}" class="img-link">
+              {% if noticia.imagen_portada %}
+                <img src="{{ noticia.imagen_portada.display_url }}" alt="{{ noticia.titulo }}" class="img-fluid publication-card-image" style="height: 200px; width: 100%; object-fit: cover; object-position: center;">
+              {% else %}
+                <img src="{% static 'images/img_1_sq.jpg' %}" alt="{{ noticia.titulo }}" class="img-fluid publication-card-image" style="height: 200px; width: 100%; object-fit: cover; object-position: center;">
+              {% endif %}
+            </a>
+            <div class="excerpt">
+              <h2><a href="{% url 'home:noticia_detalle' noticia.pk %}">{{ noticia.titulo }}</a></h2>
+              <div class="post-meta align-items-center text-left clearfix">
+                <span>{{ noticia.createdat|date:"d M Y" }}</span>
+                <span>&nbsp;-&nbsp;{% if noticia.categoria %}{{ noticia.categoria.nombre }}{% else %}Sin categoría{% endif %}</span>
+              </div>
+              <p>{{ noticia.resumen }}</p>
+              <p><a href="{% url 'home:noticia_detalle' noticia.pk %}" class="read-more">Leer noticia</a></p>
+              <small>Visitas: {{ noticia.visitas }}</small>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12 text-center"><p>No hay noticias publicadas todavía.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section pt-0">
+  <div class="container">
+    <h2 class="posts-entry-title">Categorías</h2>
+    <div class="row">
+      {% for categoria in categorias %}
+        <div class="col-md-4 mb-3">
+          <a href="{% url 'home:categoria_detalle' categoria.pk %}">{{ categoria.nombre }}</a>
+        </div>
+      {% empty %}
+        <div class="col-12"><p>No hay categorías disponibles.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock content %}

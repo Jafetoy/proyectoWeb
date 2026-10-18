@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-fmc)m+3cf^0+@igqtg+3yg8vs_=_9x(8+9vra14q^_n&18jny7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "web"]
 
 
 # Application definition
@@ -63,6 +63,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'home.context_processors.global_categorias',
             ],
         },
     },
@@ -74,23 +75,18 @@ WSGI_APPLICATION = 'canaco.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-"""DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'canaco',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charsert': 'utf8mb4',
-            'use_unicode': True,
-            'init_command': "SET NAMES utf8mb4; set sql_mode = 'STRICT_TRANS_TABLES'",
-default_storage_engine= INNODB"
-        },
-    }
-    """
+import os
 
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("DB_NAME", "canaco_db"),
+        "USER": os.environ.get("DB_USER", "jafet"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "1234"),
+        "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+        "PORT": os.environ.get("DB_PORT", "3306"),
+    }
+}
 
 
 # Password validation

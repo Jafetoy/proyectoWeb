@@ -1,0 +1,55 @@
+{% extends 'home/partials/sidebar_base.html' %}
+{% load static %}
+{% block title %}Cambiar Contraseña{% endblock %}
+{% block content %}
+<div class="profile-page">
+<div class="profile-edit-card">
+<h3>Cambiar contraseña</h3>
+<p>Esta acción modifica la contraseña de tu cuenta actual: <strong>{{ request.user.username }}</strong>.</p>
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+{{ message }}
+<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+</div>
+{% endfor %}
+{% endif %}
+<form method="POST" class="profile-edit-form">
+{% csrf_token %}
+<div class="profile-form-row">
+  <label for="current_password">Contraseña actual</label>
+  <div class="password-wrapper">
+    <input type="password" id="current_password" name="current_password" required>
+    <button type="button" class="toggle-password-btn" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
+      <i class="bi bi-eye"></i>
+    </button>
+  </div>
+</div>
+
+<div class="profile-form-row">
+  <label for="new_password1">Nueva contraseña</label>
+  <div class="password-wrapper">
+    <input type="password" id="new_password1" name="new_password1" required>
+    <button type="button" class="toggle-password-btn" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
+      <i class="bi bi-eye"></i>
+    </button>
+  </div>
+</div>
+
+<div class="profile-form-row">
+  <label for="new_password2">Confirmar contraseña</label>
+  <div class="password-wrapper">
+    <input type="password" id="new_password2" name="new_password2" required>
+    <button type="button" class="toggle-password-btn" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
+      <i class="bi bi-eye"></i>
+    </button>
+  </div>
+</div>
+<div class="profile-form-actions">
+<button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+<a href="{% url 'home:perfil' %}" class="btn btn-outline-secondary">Volver a mi perfil</a>
+</div>
+</form>
+</div>
+</div>
+{% endblock content %}

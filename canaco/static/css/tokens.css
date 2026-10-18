@@ -1,0 +1,234 @@
+/* ============================================================================
+   CANACO Editorial — Sistema de Diseño
+   tokens.css — Arquitectura de tokens en 3 capas
+   Capa 1: Primitivos (valores crudos)
+   Capa 2: Semánticos (alias por propósito)
+   Capa 3: Componente (alias específicos por componente)
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   CAPA 1: TOKENS PRIMITIVOS
+   ---------------------------------------------------------------------------- */
+:root {
+  /* Terracota / Ámbar (marca) */
+  --c-clay-900: #7C2D12;
+  --c-clay-800: #92400E;
+  --c-clay-700: #B45309;
+  --c-clay-600: #D97706;
+  --c-clay-500: #F59E0B;
+  --c-clay-100: #FEF3C7;
+  --c-clay-50: #FFFBEB;
+
+  /* Verde olivo */
+  --c-olive-700: #4D7C0F;
+  --c-olive-600: #65A30D;
+  --c-olive-100: #ECFCCB;
+  --c-olive-50: #F7FEE7;
+
+  /* Rojo terracota (peligro) */
+  --c-red-700: #B91C1C;
+  --c-red-100: #FEE2E2;
+  --c-red-50: #FEF2F2;
+
+  /* Teal cálido (info) */
+  --c-teal-700: #0E7490;
+  --c-teal-100: #CFFAFE;
+  --c-teal-50: #ECFEFF;
+
+  /* Neutros cálidos */
+  --c-sand-50: #FDFBF7;
+  --c-sand-100: #F5F1EA;
+  --c-sand-200: #E7E0D3;
+  --c-sand-300: #D6CCC0;
+  --c-sand-400: #A89F93;
+  --c-sand-500: #6B6259;
+  --c-sand-600: #2B2621;
+
+  /* Blanco puro */
+  --c-white: #FFFFFF;
+
+  /* Tipografía — familias */
+  --font-serif: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Atkinson Hyperlegible', 'Segoe UI', Arial, sans-serif;
+
+  /* Tipografía — escala */
+  --text-xs: 0.75rem;
+  /* 12px */
+  --text-sm: 0.875rem;
+  /* 14px */
+  --text-base: 1rem;
+  /* 16px */
+  --text-lg: 1.125rem;
+  /* 18px */
+  --text-xl: 1.375rem;
+  /* 22px */
+  --text-2xl: 1.75rem;
+  /* 28px */
+  --text-3xl: 2.25rem;
+  /* 36px */
+  --text-4xl: 3rem;
+  /* 48px */
+
+  /* Pesos */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Alturas de línea */
+  --lh-tight: 1.2;
+  --lh-normal: 1.6;
+
+  /* Espaciado (base 4px) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Sombras cálidas (sin azul) */
+  --shadow-sm: 0 1px 3px rgba(43, 38, 33, 0.06);
+  --shadow-md: 0 4px 12px rgba(43, 38, 33, 0.08);
+  --shadow-lg: 0 12px 28px rgba(43, 38, 33, 0.12);
+
+  /* Transiciones */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+}
+
+/* ----------------------------------------------------------------------------
+   CAPA 2: TOKENS SEMÁNTICOS
+   ---------------------------------------------------------------------------- */
+:root {
+  /* Marca */
+  --color-primary: var(--c-clay-700);
+  /* #B45309 terracota */
+  --color-primary-hover: var(--c-clay-800);
+  --color-primary-light: var(--c-clay-100);
+  --color-accent: var(--c-clay-600);
+  /* #D97706 ámbar */
+  --color-secondary: var(--c-olive-700);
+  /* #4D7C0F olivo */
+
+  /* Superficies */
+  --color-bg: var(--c-sand-50);
+  --color-surface: var(--c-white);
+  --color-surface-alt: var(--c-sand-100);
+  --color-border: var(--c-sand-200);
+  --color-border-strong: var(--c-sand-300);
+
+  /* Texto */
+  --color-text: var(--c-sand-600);
+  --color-text-muted: var(--c-sand-500);
+  --color-text-inverse: var(--c-white);
+
+  /* Estados semánticos */
+  --color-success: var(--c-olive-700);
+  --color-success-bg: var(--c-olive-50);
+  --color-warning: var(--c-clay-600);
+  --color-warning-bg: var(--c-clay-50);
+  --color-danger: var(--c-red-700);
+  --color-danger-bg: var(--c-red-50);
+  --color-info: var(--c-teal-700);
+  --color-info-bg: var(--c-teal-50);
+
+  /* Tipografía por rol */
+  --font-heading: var(--font-serif);
+  --font-body: var(--font-sans);
+
+  /* Foco */
+  --focus-ring: 0 0 0 3px rgba(217, 119, 6, 0.35);
+}
+
+/* ----------------------------------------------------------------------------
+   CAPA 3: TOKENS DE COMPONENTE
+   ---------------------------------------------------------------------------- */
+:root {
+  /* Botones */
+  --btn-bg: var(--color-primary);
+  --btn-bg-hover: var(--color-primary-hover);
+  --btn-text: var(--color-text-inverse);
+  --btn-radius: var(--radius-md);
+  --btn-padding-y: 10px;
+  --btn-padding-x: 20px;
+  --btn-font: var(--font-body);
+  --btn-font-weight: var(--fw-semibold);
+  --btn-shadow-hover: var(--shadow-md);
+
+  /* Inputs */
+  --input-bg: var(--color-surface);
+  --input-border: var(--color-border);
+  --input-border-focus: var(--color-accent);
+  --input-radius: var(--radius-sm);
+  --input-padding-y: 10px;
+  --input-padding-x: 12px;
+  --input-text: var(--color-text);
+  --input-placeholder: var(--color-text-muted);
+
+  /* Tarjetas */
+  --card-bg: var(--color-surface);
+  --card-border: var(--color-border);
+  --card-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-md);
+  --card-padding: var(--sp-6);
+
+  /* Badges */
+  --badge-radius: var(--radius-full);
+  --badge-padding-y: 4px;
+  --badge-padding-x: 12px;
+  --badge-font-size: var(--text-xs);
+  --badge-font-weight: var(--fw-semibold);
+
+  /* Sidebar admin */
+  --sidebar-bg: var(--color-surface);
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 72px;
+  --sidebar-item-active-bg: var(--color-primary-light);
+  --sidebar-item-active-border: var(--color-primary);
+
+  /* Tablas */
+  --table-head-bg: var(--color-surface-alt);
+  --table-head-text: var(--color-text-muted);
+  --table-row-hover: var(--color-primary-light);
+}
+
+/* ----------------------------------------------------------------------------
+   MODO OSCURO (opcional, para el panel admin)
+   ---------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  --color-bg: #1C1917;
+  --color-surface: #262220;
+  --color-surface-alt: #302B28;
+  --color-border: #3E3833;
+  --color-text: #E7E5E4;
+  --color-text-muted: #A8A29E;
+  --color-primary: #F59E0B;
+  --color-primary-hover: #FBBF24;
+  --color-primary-light: #451A03;
+}
+
+/* ----------------------------------------------------------------------------
+   REDUCCIÓN DE MOVIMIENTO (accesibilidad)
+   ---------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

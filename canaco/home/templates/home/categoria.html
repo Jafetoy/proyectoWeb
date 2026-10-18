@@ -1,0 +1,46 @@
+{% extends 'home/partials/base.html' %}
+{% load static %}
+
+{% block title %}Categorías{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="row mb-4 align-items-center">
+      <div class="col-lg-8 col-md-7 mb-3 mb-md-0">
+        <h1 class="posts-entry-title mb-0">{% if categoria %}{{ categoria.nombre }}{% else %}Noticias por categoría{% endif %}</h1>
+      </div>
+      <div class="col-lg-4 col-md-5">
+        <select class="form-select" aria-label="Filtrar por categoría" onchange="if (this.value) window.location.href = this.value">
+          <option value="{% url 'home:categoria' %}" {% if not categoria %}selected{% endif %}>Todas las categorías</option>
+          {% for opcion in categorias %}
+            <option value="{% url 'home:categoria_detalle' opcion.pk %}" {% if categoria.pk == opcion.pk %}selected{% endif %}>{{ opcion.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <hr class="mb-5">
+
+    {% for noticia in publicaciones %}
+      <div class="row mb-5 align-items-center">
+        {% if noticia.imagen_portada %}
+          <div class="col-md-4 col-lg-3 mb-3 mb-md-0">
+            <a href="{% url 'home:noticia_detalle' noticia.pk %}" class="img-link">
+              <img src="{{ noticia.imagen_portada.display_url }}" alt="{{ noticia.titulo }}" class="img-fluid rounded category-post-image">
+            </a>
+          </div>
+        {% endif %}
+        <div class="{% if noticia.imagen_portada %}col-md-8 col-lg-9{% else %}col-12{% endif %}">
+          <span class="date text-muted">{{ noticia.createdat|date:"d M Y" }}{% if noticia.categoria %} &bullet; {{ noticia.categoria.nombre }}{% endif %}</span>
+          <h2 class="mt-1"><a href="{% url 'home:noticia_detalle' noticia.pk %}">{{ noticia.titulo }}</a></h2>
+          <p>{{ noticia.resumen }}</p>
+          <p><a href="{% url 'home:noticia_detalle' noticia.pk %}" class="btn btn-sm btn-outline-primary">Leer más</a></p>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center py-4"><p class="text-muted">No hay noticias publicadas para esta categoría.</p></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock content %}

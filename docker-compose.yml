@@ -1,0 +1,42 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: canaco_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: canaco_db
+      MYSQL_USER: jafet
+      MYSQL_PASSWORD: "1234"
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    container_name: canaco_web
+    restart: always
+    command: python canaco/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_NAME=canaco_db
+      - DB_USER=jafet
+      - DB_PASSWORD=1234
+      - DB_HOST=db
+      - DB_PORT=3306
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+

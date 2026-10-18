@@ -1,0 +1,115 @@
+{% extends 'home/partials/base.html' %}
+{% load static %}
+
+{% block title %}{{ publicacion.titulo }}{% endblock %}
+
+{% block content %}
+{% if messages %}
+  <div class="container article-flash-messages">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<header class="article-hero">
+  {% if publicacion.imagen_portada %}
+    <img class="article-hero-image" src="{{ publicacion.imagen_portada.display_url }}" alt="{{ publicacion.titulo }}" fetchpriority="high">
+  {% else %}
+    <img class="article-hero-image" src="{% static 'images/hero_1.jpg' %}" alt="" fetchpriority="high">
+  {% endif %}
+  <div class="article-hero-shade"></div>
+  <div class="article-hero-inner">
+    <div class="container">
+      <div class="article-hero-copy">
+        <div class="article-hero-meta">
+          {% if publicacion.categoria %}
+            <a class="article-hero-category" href="{% url 'home:categoria_detalle' publicacion.categoria.pk %}">{{ publicacion.categoria.nombre }}</a>
+          {% else %}
+            <span class="article-hero-category">Noticias</span>
+          {% endif %}
+          <time datetime="{{ publicacion.createdat|date:'c' }}">{{ publicacion.createdat|date:"d M Y" }}</time>
+          <span>{{ publicacion.visitas }} visitas</span>
+        </div>
+        <h1 class="article-hero-title">{{ publicacion.titulo }}</h1>
+        <p class="article-hero-summary">{{ publicacion.resumen }}</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="article-content-section">
+  <div class="container">
+    <div class="row article-content-layout">
+      <article class="col-lg-8 article-main">
+        <h2 class="article-section-title">La noticia</h2>
+        <div class="article-prose">{{ publicacion.contenido|safe }}</div>
+
+        <section class="article-gallery" aria-labelledby="gallery-title">
+          <h2 class="article-section-title" id="gallery-title">Galería</h2>
+          <div class="article-gallery-grid">
+            {% for imagen in publicacion.galeria.all %}
+              <img src="{{ imagen.archivo.display_url }}" alt="Imagen de la galería: {{ publicacion.titulo }}" loading="lazy">
+            {% empty %}
+              <p class="article-muted">Esta noticia no tiene imágenes adicionales.</p>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="article-comments" aria-labelledby="comments-title">
+          <h2 class="article-section-title" id="comments-title">Comentarios</h2>
+          {% for comentario in comentarios %}
+            <article class="article-comment">
+              <div class="article-comment-meta">
+                <strong>{{ comentario.autor.username }}</strong>
+                <time datetime="{{ comentario.createdat|date:'c' }}">{{ comentario.createdat|date:"d M Y H:i" }}</time>
+              </div>
+              <p>{{ comentario.contenido }}</p>
+            </article>
+          {% empty %}
+            <p class="article-muted">Todavía no hay comentarios aprobados.</p>
+          {% endfor %}
+
+          {% if request.user.is_authenticated %}
+            <form method="post" class="article-comment-form">
+              {% csrf_token %}
+              <label for="contenido">Deja un comentario</label>
+              <textarea class="form-control" id="contenido" name="contenido" rows="4" placeholder="Escribe tu comentario..." required></textarea>
+              <button type="submit" class="btn btn-primary">Enviar comentario</button>
+            </form>
+          {% else %}
+            <a href="{% url 'home:login' %}" class="btn btn-primary">Inicia sesión para comentar</a>
+          {% endif %}
+        </section>
+      </article>
+
+      <aside class="col-lg-4 article-sidebar">
+        <h2 class="article-sidebar-title">Otras noticias</h2>
+        {% for reciente in recientes %}
+          <a class="article-related-link" href="{% url 'home:noticia_detalle' reciente.pk %}">
+            {% if reciente.imagen_portada %}
+              <img src="{{ reciente.imagen_portada.display_url }}" alt="" loading="lazy">
+            {% endif %}
+            <span>
+              <strong>{{ reciente.titulo }}</strong>
+              <time datetime="{{ reciente.createdat|date:'c' }}">{{ reciente.createdat|date:"d M Y" }}</time>
+            </span>
+          </a>
+        {% empty %}
+          <p class="article-muted">No hay otras noticias publicadas.</p>
+        {% endfor %}
+
+        <h2 class="article-sidebar-title article-category-title">Categorías</h2>
+        {% for categoria in categorias %}
+          <a class="article-category-link" href="{% url 'home:categoria_detalle' categoria.pk %}">{{ categoria.nombre }}</a>
+        {% empty %}
+          <p class="article-muted">No hay categorías disponibles.</p>
+        {% endfor %}
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock content %}
