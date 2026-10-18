@@ -1,6 +1,9 @@
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -64,6 +67,10 @@ def crear_publicacion(request):
         categoria_id = request.POST.get('categoria')
         estado = request.POST.get('estado', Publicacion.ESTADO_BORRADOR)
 
+        if estado not in dict(Publicacion.ESTADOS):
+            messages.error(request, 'Selecciona un estado válido.')
+            return redirect('home:crear_publicacion')
+
         autor = request.user
         categoria = Categoria.objects.filter(id=categoria_id).first() if categoria_id else None
 
@@ -95,6 +102,7 @@ def crear_publicacion(request):
 
 crear_publicaciones = crear_publicacion
 
+@operador_required
 def crear_usuario(request):
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
@@ -106,12 +114,29 @@ def crear_usuario(request):
         password2 = request.POST.get('password2', '')
         rol = request.POST.get('rol')
 
+        if not username or not password1:
+            messages.error(request, 'El usuario y la contraseña son obligatorios.')
+            return redirect('home:crear_usuario')
+
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Ese usuario ya está registrado. Intenta de nuevo.')
             return redirect('home:crear_usuario')
 
         if password1 != password2:
             messages.error(request, 'Las contraseñas no coinciden.')
+            return redirect('home:crear_usuario')
+
+        try:
+            validate_password(password1)
+        except ValidationError as error:
+            messages.error(request, ' '.join(error.messages))
+            return redirect('home:crear_usuario')
+
+        if rol not in {'colaborador', 'editor', 'administrador'}:
+            messages.error(request, 'Selecciona un rol válido.')
+            return redirect('home:crear_usuario')
+        if rol == 'administrador' and not request.user.is_superuser:
+            messages.error(request, 'Solo un administrador puede crear otro administrador.')
             return redirect('home:crear_usuario')
 
         usuario = User.objects.create_user(
@@ -137,6 +162,7 @@ def crear_usuario(request):
     return render(request, 'home/crear_usuario.html')
 
 
+@login_required
 def crud_cambiar_contraseña(request):
     if request.method == 'POST':
         current_password = request.POST.get('current_password', '')
@@ -151,8 +177,15 @@ def crud_cambiar_contraseña(request):
             messages.error(request, 'Las nuevas contraseñas no coinciden.')
             return redirect('home:crud_cambiar_contraseña')
 
+        try:
+            validate_password(new_password1, request.user)
+        except ValidationError as error:
+            messages.error(request, ' '.join(error.messages))
+            return redirect('home:crud_cambiar_contraseña')
+
         request.user.set_password(new_password1)
         request.user.save()
+        update_session_auth_hash(request, request.user)
         messages.success(request, 'Contraseña cambiada exitosamente.')
         return redirect('home:perfil')
     return render(request, 'home/crud_cambiar_contraseña.html')
@@ -222,7 +255,11 @@ def editar_publicacion(request, pk):
 
         categoria_id = request.POST.get('categoria')
         publicacion.categoria = Categoria.objects.filter(id=categoria_id).first() if categoria_id else None
-        publicacion.estado = request.POST.get('estado', publicacion.estado)
+        estado = request.POST.get('estado', publicacion.estado)
+        if estado not in dict(Publicacion.ESTADOS):
+            messages.error(request, 'Selecciona un estado válido.')
+            return redirect('home:editar_publicacion', pk=publicacion.pk)
+        publicacion.estado = estado
 
         portada = request.FILES.get('imagen_portada')
         if portada:
@@ -268,6 +305,7 @@ def eliminar_publicacion(request, pk):
         messages.success(request, 'Publicación eliminada correctamente.')
     return redirect('home:crud_noticias')
 
+@operador_required
 def crud_usuarios(request):
     usuarios = User.objects.all().order_by('-date_joined')
     return render(request, 'home/crud_usuarios.html', {'usuarios': usuarios})
@@ -352,12 +390,6 @@ def noticia(request, pk=None):
 def sign_up(request):
     return render(request, 'home/sign_up.html')
 
-def operador_required(view_func):
-    es_operador = lambda user: user.is_authenticated and (
-        user.is_staff or user.is_superuser
-    )
-    return user_passes_test(es_operador)(view_func)
-
 @login_required
 def perfil(request):
     perfil_usuario, _ = Perfil.objects.get_or_create(user=request.user)
@@ -399,6 +431,9 @@ def crud_perfil(request):
 @operador_required
 def editar_usuario(request, pk):
     usuario = get_object_or_404(User, pk=pk)
+    if usuario.is_superuser and not request.user.is_superuser:
+        messages.error(request, 'Solo un administrador puede modificar esta cuenta.')
+        return redirect('home:crud_usuarios')
     perfil, _ = Perfil.objects.get_or_create(user=usuario)
 
     if request.method == 'POST':
@@ -412,6 +447,12 @@ def editar_usuario(request, pk):
 
         rol = request.POST.get('rol')
         if rol:
+            if rol not in {'colaborador', 'editor', 'administrador'}:
+                messages.error(request, 'Selecciona un rol válido.')
+                return redirect('home:editar_usuario', pk=usuario.pk)
+            if rol == 'administrador' and not request.user.is_superuser:
+                messages.error(request, 'Solo un administrador puede asignar ese rol.')
+                return redirect('home:editar_usuario', pk=usuario.pk)
             usuario.is_staff = rol in ['editor', 'administrador']
             usuario.is_superuser = (rol == 'administrador')
 
@@ -435,17 +476,19 @@ def editar_usuario(request, pk):
 
 
 @operador_required
+@require_POST
 def bloquear_usuario(request, pk):
     usuario = get_object_or_404(User, pk=pk)
-    if usuario != request.user:
+    if usuario != request.user and (not usuario.is_superuser or request.user.is_superuser):
         usuario.is_active = not usuario.is_active
         usuario.save()
     return redirect('home:crud_usuarios')
 
 
 @operador_required
+@require_POST
 def eliminar_usuario(request, pk):
     usuario = get_object_or_404(User, pk=pk)
-    if request.method == 'POST' and usuario != request.user:
+    if usuario != request.user and (not usuario.is_superuser or request.user.is_superuser):
         usuario.delete()
     return redirect('home:crud_usuarios')
