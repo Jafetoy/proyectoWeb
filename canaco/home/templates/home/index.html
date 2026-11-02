@@ -5,23 +5,49 @@
 
 {% block content %}
 <section class="home-carousel-section home-welcome-section bg-light">
-  {% if destacada %}
-    <a href="{% url 'home:noticia_detalle' destacada.pk %}" class="home-carousel-link home-welcome-link">
-      {% if destacada.imagen_portada %}
-        <img src="{{ destacada.imagen_portada.display_url }}" class="home-carousel-image home-welcome-image" alt="{{ destacada.titulo }}">
-      {% else %}
-        <img src="{% static 'images/hero_1.jpg' %}" class="home-carousel-image home-welcome-image" alt="{{ destacada.titulo }}">
+  {% if portadas %}
+    <div class="home-welcome-slider" data-home-slider aria-label="Noticias destacadas">
+      {% for noticia in portadas %}
+        <a href="{% url 'home:noticia_detalle' noticia.pk %}" class="home-carousel-link home-welcome-link" data-home-slide{% if not forloop.first %} hidden{% endif %} aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}">
+          {% if noticia.imagen_portada %}
+            <img src="{{ noticia.imagen_portada.display_url }}" class="home-carousel-image home-welcome-image" alt="{{ noticia.titulo }}">
+          {% else %}
+            <img src="{% static 'images/hero_1.jpg' %}" class="home-carousel-image home-welcome-image" alt="{{ noticia.titulo }}">
+          {% endif %}
+          <div class="home-carousel-caption home-welcome-caption text-start">
+            <span>{{ noticia.createdat|date:"d M Y" }}</span>
+            <h2>{{ noticia.titulo }}</h2>
+            <p>{{ noticia.resumen }}</p>
+          </div>
+        </a>
+      {% endfor %}
+      {% if portadas|length > 1 %}
+        <button type="button" class="home-welcome-arrow home-welcome-previous" data-home-previous aria-label="Noticia anterior"><span aria-hidden="true">&#10094;</span></button>
+        <button type="button" class="home-welcome-arrow home-welcome-next" data-home-next aria-label="Siguiente noticia"><span aria-hidden="true">&#10095;</span></button>
       {% endif %}
-      <div class="home-carousel-caption home-welcome-caption text-start">
-        <span>{{ destacada.createdat|date:"d M Y" }}</span>
-        <h2>{{ destacada.titulo }}</h2>
-        <p>{{ destacada.resumen }}</p>
-      </div>
-    </a>
+    </div>
   {% else %}
     <div class="container py-5"><p class="mb-0">Todavía no hay noticias publicadas.</p></div>
   {% endif %}
 </section>
+<script>
+  document.querySelectorAll('[data-home-slider]').forEach((slider) => {
+    const slides = Array.from(slider.querySelectorAll('[data-home-slide]'));
+    let activeIndex = 0;
+
+    const showSlide = (index) => {
+      activeIndex = (index + slides.length) % slides.length;
+      slides.forEach((slide, slideIndex) => {
+        const active = slideIndex === activeIndex;
+        slide.hidden = !active;
+        slide.setAttribute('aria-hidden', String(!active));
+      });
+    };
+
+    slider.querySelector('[data-home-previous]')?.addEventListener('click', () => showSlide(activeIndex - 1));
+    slider.querySelector('[data-home-next]')?.addEventListener('click', () => showSlide(activeIndex + 1));
+  });
+</script>
 
 <section class="section recent-news-section">
   <div class="container">

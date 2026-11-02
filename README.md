@@ -33,6 +33,11 @@ proyectoWeb/
 
 ## Requisitos
 
+Para producción en Azure con Docker, Gunicorn, MySQL y Nginx, consulta
+[la guía de despliegue](docs/despliegue-azure.md). Usa los archivos
+`Dockerfile.production` y `compose.production.yaml`; los comandos de abajo
+corresponden al entorno de desarrollo.
+
 - [Docker](https://www.docker.com/) y Docker Compose
 
 ## Instalación y uso
@@ -68,6 +73,22 @@ Para detener todo:
 
 ```bash
 docker compose down
+```
+
+## Pruebas
+
+La suite usa SQLite en memoria y no modifica MySQL:
+
+```powershell
+Push-Location .\canaco
+python -B .\manage.py test --settings=canaco.settings_test
+Pop-Location
+```
+
+Para ejecutar solo las comprobaciones de configuración de producción:
+
+```powershell
+python -B .\canaco\manage.py test home.test_production --settings=canaco.settings_test -v 2
 ```
 
 ## Roles

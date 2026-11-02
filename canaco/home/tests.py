@@ -8,6 +8,14 @@ from .models import Categoria, Comentario, Perfil, Publicacion
 
 
 class CrearUsuarioTests(TestCase):
+	def setUp(self):
+		self.operador = User.objects.create_superuser(
+			username='administrador_usuarios',
+			email='administrador@example.com',
+			password='ClaveSegura123!',
+		)
+		self.client.force_login(self.operador)
+
 	def test_crea_usuario_y_actualiza_perfil_generado_por_senal(self):
 		response = self.client.post(reverse('home:crear_usuario'), {
 			'username': 'nuevo_usuario_test',
@@ -136,7 +144,13 @@ class LaboratorioNoticiasTests(TestCase):
 
 		self.client.logout()
 		response = self.client.get(reverse('home:noticia_detalle', args=[publicacion.pk]))
-		self.assertContains(response, 'Noticia pública')
+		self.assertContains(response, publicacion.titulo)
+		publicacion.refresh_from_db()
+		self.assertEqual(publicacion.visitas, 0)
+
+		visita_url = reverse('home:registrar_visita', args=[publicacion.pk])
+		self.assertEqual(self.client.get(visita_url).status_code, 405)
+		self.assertEqual(self.client.post(visita_url).status_code, 204)
 		publicacion.refresh_from_db()
 		self.assertEqual(publicacion.visitas, 1)
 
@@ -194,3 +208,104 @@ class GlobalFooterContextTests(TestCase):
 		self.assertIn(publicaciones[2].titulo, footer)
 		self.assertIn(publicaciones[1].titulo, footer)
 		self.assertNotIn(publicaciones[0].titulo, footer)
+
+
+class PortadasTests(TestCase):
+	def test_index_muestra_las_cinco_publicaciones_mas_recientes(self):
+		ahora = timezone.now()
+		publicaciones = []
+		for indice in range(6):
+			publicacion = Publicacion.objects.create(
+				titulo=f'Portada {indice}',
+				resumen='Resumen',
+				contenido='Contenido',
+				estado=Publicacion.ESTADO_PUBLICADO,
+			)
+			Publicacion.objects.filter(pk=publicacion.pk).update(
+				createdat=ahora + timedelta(minutes=indice)
+			)
+			publicaciones.append(publicacion)
+
+		Publicacion.objects.create(
+			titulo='Borrador fuera de portadas',
+			resumen='Resumen',
+			contenido='Contenido',
+			estado=Publicacion.ESTADO_BORRADOR,
+		)
+
+		response = self.client.get(reverse('home:index'))
+
+		self.assertEqual(
+			list(response.context['portadas'].values_list('pk', flat=True)),
+			[publicacion.pk for publicacion in reversed(publicaciones[1:])],
+		)
+		self.assertContains(response, publicaciones[5].titulo)
+		self.assertNotContains(response, 'Borrador fuera de portadas')
+
+	def test_index_admite_portadas_vacias(self):
+		response = self.client.get(reverse('home:index'))
+
+		self.assertEqual(list(response.context['portadas']), [])
+		self.assertEqual(response.status_code, 200)
+
+
+class GetSinMutacionesTests(TestCase):
+	def setUp(self):
+		self.operador = User.objects.create_superuser(
+			username='operador_get',
+			email='operador@example.com',
+			password='ClaveSegura123!',
+		)
+		self.usuario = User.objects.create_user(
+			username='usuario_sin_perfil',
+			password='ClaveSegura123!',
+		)
+		Perfil.objects.filter(user=self.usuario).delete()
+
+	def test_perfil_y_crud_perfil_no_crean_perfil_con_get(self):
+		self.client.force_login(self.usuario)
+
+		self.assertEqual(self.client.get(reverse('home:perfil')).status_code, 200)
+		self.assertEqual(self.client.get(reverse('home:crud_perfil')).status_code, 200)
+		self.assertFalse(Perfil.objects.filter(user=self.usuario).exists())
+
+	def test_editar_usuario_no_crea_perfil_con_get(self):
+		self.client.force_login(self.operador)
+
+		response = self.client.get(reverse('home:editar_usuario', args=[self.usuario.pk]))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertFalse(Perfil.objects.filter(user=self.usuario).exists())
+
+
+class EditarUsuarioPasswordTests(TestCase):
+	def setUp(self):
+		self.operador = User.objects.create_superuser(
+			username='administrador_password',
+			email='admin@example.com',
+			password='ClaveSegura123!',
+		)
+		self.usuario = User.objects.create_user(
+			username='usuario_password',
+			email='usuario@example.com',
+			password='ClaveOriginal123!',
+		)
+		self.client.force_login(self.operador)
+
+	def test_rechaza_password_que_no_supera_los_validadores(self):
+		response = self.client.post(
+			reverse('home:editar_usuario', args=[self.usuario.pk]),
+			{
+				'username': self.usuario.username,
+				'email': self.usuario.email,
+				'password1': '123',
+				'password2': '123',
+			},
+		)
+
+		self.assertRedirects(
+			response,
+			reverse('home:editar_usuario', args=[self.usuario.pk]),
+		)
+		self.usuario.refresh_from_db()
+		self.assertTrue(self.usuario.check_password('ClaveOriginal123!'))

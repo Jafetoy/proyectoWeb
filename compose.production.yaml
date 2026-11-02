@@ -1,0 +1,47 @@
+name: canaco-production
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:?required}
+      MYSQL_USER: ${DB_USER:?required}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?required}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?required}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -uroot --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  web:
+    image: canaco-web:${RELEASE:?required}
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: canaco.settings_production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?required}
+      DJANGO_HOST: ${DJANGO_HOST:?required}
+      DB_NAME: ${DB_NAME:?required}
+      DB_USER: ${DB_USER:?required}
+      DB_PASSWORD: ${DB_PASSWORD:?required}
+      DB_HOST: db
+      DB_PORT: "3306"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - /srv/canaco/static:/srv/static
+      - /srv/canaco/media:/srv/media
+    depends_on:
+      db: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+volumes:
+  mysql_data:

@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import F
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from .models import Perfil, Publicacion, Categoria, Archivo, GaleriaPublicacion, Comentario
@@ -35,6 +36,7 @@ def index(request):
     ).select_related('categoria', 'autor', 'imagen_portada').order_by('-createdat')
     return render(request, 'home/index.html', {
         'destacada': publicaciones.first(),
+        'portadas': publicaciones[:5],
         'publicaciones': publicaciones[:6],
         'categorias': Categoria.objects.all().order_by('nombre'),
     })
@@ -354,9 +356,6 @@ def noticia(request, pk=None):
         messages.info(request, 'Todavía no hay noticias publicadas.')
         return redirect('home:index')
 
-    Publicacion.objects.filter(pk=publicacion.pk).update(visitas=F('visitas') + 1)
-    publicacion.refresh_from_db()
-
     if request.method == 'POST':
         if not request.user.is_authenticated:
             messages.error(request, 'Debes iniciar sesión para comentar.')
@@ -387,17 +386,29 @@ def noticia(request, pk=None):
         'categorias': categorias,
     })
 
+
+@require_POST
+def registrar_visita(request, pk):
+    if es_operador(request.user):
+        publicaciones = Publicacion.objects.all()
+    else:
+        publicaciones = Publicacion.objects.filter(estado=Publicacion.ESTADO_PUBLICADO)
+
+    publicacion = get_object_or_404(publicaciones, pk=pk)
+    Publicacion.objects.filter(pk=publicacion.pk).update(visitas=F('visitas') + 1)
+    return HttpResponse(status=204)
+
 def sign_up(request):
     return render(request, 'home/sign_up.html')
 
 @login_required
 def perfil(request):
-    perfil_usuario, _ = Perfil.objects.get_or_create(user=request.user)
+    perfil_usuario = Perfil.objects.filter(user=request.user).first() or Perfil(user=request.user)
     return render(request, 'home/perfil.html', {'perfil_usuario': perfil_usuario})
 
 @login_required
 def crud_perfil(request):
-    perfil_usuario, _ = Perfil.objects.get_or_create(user=request.user)
+    perfil_usuario = Perfil.objects.filter(user=request.user).first() or Perfil(user=request.user)
 
     if request.method == 'POST':
         user = request.user
@@ -434,7 +445,7 @@ def editar_usuario(request, pk):
     if usuario.is_superuser and not request.user.is_superuser:
         messages.error(request, 'Solo un administrador puede modificar esta cuenta.')
         return redirect('home:crud_usuarios')
-    perfil, _ = Perfil.objects.get_or_create(user=usuario)
+    perfil = Perfil.objects.filter(user=usuario).first() or Perfil(user=usuario)
 
     if request.method == 'POST':
         usuario.username = request.POST.get('username', usuario.username).strip()
@@ -461,6 +472,12 @@ def editar_usuario(request, pk):
         if password1 or password2:
             if password1 != password2:
                 messages.error(request, 'Las contraseñas no coinciden.')
+                return redirect('home:editar_usuario', pk=usuario.pk)
+            try:
+                validate_password(password1, user=usuario)
+            except ValidationError as errores:
+                for error in errores.messages:
+                    messages.error(request, error)
                 return redirect('home:editar_usuario', pk=usuario.pk)
             usuario.set_password(password1)
 

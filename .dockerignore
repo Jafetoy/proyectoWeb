@@ -9,4 +9,16 @@ db.sqlite3
 .vscode/
 .idea/
 *.log
+.env
+.env.*
+.engram/
+.atl/
+.agents/
+.codex/
+canaco/media/
+canaco/staticfiles/
+**/__pycache__/
+**/*.pyc
+**/*.sqlite3
+backups/
 

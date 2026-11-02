@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.production.example
+canaco_env/
+__pycache__/
+*.py[cod]
+*.sqlite3
+canaco/media/
+canaco/staticfiles/
+backups/
+
+# Herramientas auxiliares locales
+.atl/
+.engram/
+.gga

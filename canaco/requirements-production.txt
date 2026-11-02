@@ -1,0 +1,5 @@
+# Independent production environment; development requirements remain unchanged.
+Django==5.2.18
+django-mysql==4.19.0
+mysqlclient==2.2.8
+gunicorn==26.2.0
