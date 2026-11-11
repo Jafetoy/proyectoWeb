@@ -399,6 +399,103 @@ def registrar_visita(request, pk):
     return HttpResponse(status=204)
 
 def sign_up(request):
+    from django.contrib import messages
+    from django.contrib.auth.models import User
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    from django.core.validators import validate_email
+    from django.db import transaction, IntegrityError
+    from django.shortcuts import render, redirect
+    from .models import Perfil
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        apellido_paterno = request.POST.get('apellido_paterno', '').strip()
+        apellido_materno = request.POST.get('apellido_materno', '').strip()
+        password1 = request.POST.get('password1', '')
+        password2 = request.POST.get('password2', '')
+
+        if not username or not email or not password1 or not password2:
+            messages.error(request, 'Completa todos los campos obligatorios.')
+            return render(request, 'home/sign_up.html')
+
+        if len(username) > 150 or len(email) > 254 or len(first_name) > 150:
+            messages.error(request, 'Uno de los campos supera la longitud permitida.')
+            return render(request, 'home/sign_up.html')
+
+        if len(apellido_paterno) > 80 or len(apellido_materno) > 80:
+            messages.error(request, 'Los apellidos son demasiado largos.')
+            return render(request, 'home/sign_up.html')
+
+        try:
+            User._meta.get_field('username').run_validators(username)
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, 'Introduce un usuario y correo válidos.')
+            return render(request, 'home/sign_up.html')
+
+        if User.objects.filter(username__iexact=username).exists():
+            messages.error(request, 'Ese nombre de usuario ya está registrado.')
+            return render(request, 'home/sign_up.html')
+
+        if User.objects.filter(email__iexact=email).exists():
+            messages.error(request, 'Ese correo electrónico ya está registrado.')
+            return render(request, 'home/sign_up.html')
+
+        if password1 != password2:
+            messages.error(request, 'Las contraseñas no coinciden.')
+            return render(request, 'home/sign_up.html')
+
+        usuario_temporal = User(
+            username=username,
+            email=email,
+            first_name=first_name
+        )
+
+        try:
+            validate_password(password1, user=usuario_temporal)
+        except ValidationError as errores:
+            for error in errores.messages:
+                messages.error(request, error)
+            return render(request, 'home/sign_up.html')
+
+        try:
+            with transaction.atomic():
+                usuario = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password1,
+                    first_name=first_name,
+                    last_name=' '.join(filter(None, [
+                        apellido_paterno, apellido_materno
+                    ])),
+                    is_staff=False,
+                    is_superuser=False
+                )
+
+                perfil, _ = Perfil.objects.get_or_create(user=usuario)
+                perfil.apellido_paterno = apellido_paterno
+                perfil.apellido_materno = apellido_materno
+                perfil.save(update_fields=[
+                    'apellido_paterno',
+                    'apellido_materno'
+                ])
+
+        except IntegrityError:
+            messages.error(
+                request,
+                'No se pudo completar el registro. Verifica que el usuario no exista.'
+            )
+            return render(request, 'home/sign_up.html')
+
+        messages.success(
+            request,
+            'Cuenta creada correctamente. Ya puedes iniciar sesión.'
+        )
+        return redirect('home:login')
+
     return render(request, 'home/sign_up.html')
 
 @login_required

@@ -1,7 +1,9 @@
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LogoutView
 from django.urls import path
+from django.views.decorators.http import require_POST
 from home import views
+from home.media_views import mostrar_imagen
 from home.models import Perfil
 
 app_name = "home"
@@ -27,7 +29,7 @@ urlpatterns = [
     path("editar-categoria/<int:pk>/", views.editar_categoria, name="editar_categoria"),
     path("eliminar-categoria/<int:pk>/", views.eliminar_categoria, name="eliminar_categoria"),
     path("login/", auth_views.LoginView.as_view(template_name="home/login.html"), name="login"),
-    path("logout/", LogoutView.as_view(next_page="home:index"), name="logout"),
+    path("logout/", require_POST(LogoutView.as_view(next_page="home:index")), name="logout"),
     path("noticia/<int:pk>/", views.noticia, name="noticia_detalle"),
     path("noticia/<int:pk>/visita/", views.registrar_visita, name="registrar_visita"),
     path("noticia/", views.noticia, name="noticia"),
@@ -39,4 +41,18 @@ urlpatterns = [
     path("bloquear-usuario/<int:pk>/", views.bloquear_usuario, name="bloquear_usuario"),
     path("eliminar-usuario/<int:pk>/", views.eliminar_usuario, name="eliminar_usuario"),
     path("sign-up/", views.sign_up, name="sign_up"),
+    path("archivo/<int:pk>/imagen/", mostrar_imagen, name="mostrar_imagen"),
+
+]
+
+# Página pública de privacidad
+from django.urls import path as privacy_path
+from django.views.generic import TemplateView as PrivacyTemplateView
+
+urlpatterns += [
+    privacy_path(
+        'privacidad/',
+        PrivacyTemplateView.as_view(template_name='home/privacidad.html'),
+        name='privacidad'
+    ),
 ]

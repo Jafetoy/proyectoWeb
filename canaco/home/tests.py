@@ -1,10 +1,14 @@
+import importlib
 from datetime import timedelta
+from tempfile import TemporaryDirectory
+
 from django.contrib.auth.models import User
-from django.test import RequestFactory, TestCase
-from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, RequestFactory, TestCase, override_settings
+from django.urls import clear_url_caches, reverse
 from django.utils import timezone
 from .context_processors import global_categorias
-from .models import Categoria, Comentario, Perfil, Publicacion
+from .models import Archivo, Categoria, Comentario, GaleriaPublicacion, Perfil, Publicacion
 
 
 class CrearUsuarioTests(TestCase):
@@ -309,3 +313,233 @@ class EditarUsuarioPasswordTests(TestCase):
 		)
 		self.usuario.refresh_from_db()
 		self.assertTrue(self.usuario.check_password('ClaveOriginal123!'))
+
+
+class ArchivoDisplayUrlTests(TestCase):
+    def test_usa_static_para_recursos_estaticos_y_ruta_protegida_para_subidas(self):
+        estatico = Archivo(ruta='images/logo.png')
+        subido = Archivo.objects.create(
+            nombre='portada.jpg',
+            nombre_temporal='portada.jpg',
+            ruta='uploads/portada.jpg',
+        )
+
+        self.assertEqual(estatico.display_url, '/static/images/logo.png')
+        self.assertEqual(
+            subido.display_url,
+            reverse('home:mostrar_imagen', args=[subido.pk]),
+        )
+
+
+class MostrarImagenTests(TestCase):
+    def setUp(self):
+        self.directorio_media = TemporaryDirectory()
+        self.configuracion_media = override_settings(MEDIA_ROOT=self.directorio_media.name)
+        self.configuracion_media.enable()
+        self.addCleanup(self.directorio_media.cleanup)
+        self.addCleanup(self.configuracion_media.disable)
+
+        self.operador = User.objects.create_user(
+            username='operador_imagenes',
+            password='ClaveSegura123!',
+            is_staff=True,
+        )
+        self.propietario = User.objects.create_user(
+            username='propietario_imagen',
+            password='ClaveSegura123!',
+        )
+        self.otro_usuario = User.objects.create_user(
+            username='otro_usuario_imagen',
+            password='ClaveSegura123!',
+        )
+
+    def crear_archivo(self, nombre='imagen.jpg', contenido=b'imagen'):
+        return Archivo.objects.create(
+            nombre=nombre,
+            nombre_temporal=nombre,
+            ruta=SimpleUploadedFile(nombre, contenido),
+        )
+
+    def test_imagen_publicada_es_publica(self):
+        archivo = self.crear_archivo()
+        Publicacion.objects.create(
+            titulo='Noticia publicada',
+            resumen='Resumen',
+            contenido='Contenido',
+            estado=Publicacion.ESTADO_PUBLICADO,
+            imagen_portada=archivo,
+        )
+
+        response = self.client.get(reverse('home:mostrar_imagen', args=[archivo.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+        self.assertEqual(response['Cache-Control'], 'private, no-store')
+        b''.join(response.streaming_content)
+
+    def test_operador_puede_ver_portada_y_galeria_de_borrador(self):
+        portada = self.crear_archivo('portada.jpg')
+        galeria = self.crear_archivo('galeria.png')
+        publicacion = Publicacion.objects.create(
+            titulo='Borrador privado',
+            resumen='Resumen',
+            contenido='Contenido',
+            estado=Publicacion.ESTADO_BORRADOR,
+            imagen_portada=portada,
+        )
+        GaleriaPublicacion.objects.create(publicacion=publicacion, archivo=galeria)
+        self.client.force_login(self.operador)
+
+        for archivo in (portada, galeria):
+            with self.subTest(archivo=archivo.nombre):
+                response = self.client.get(reverse('home:mostrar_imagen', args=[archivo.pk]))
+                self.assertEqual(response.status_code, 200)
+                b''.join(response.streaming_content)
+
+    def test_borrador_no_es_publico(self):
+        archivo = self.crear_archivo()
+        Publicacion.objects.create(
+            titulo='Borrador privado',
+            resumen='Resumen',
+            contenido='Contenido',
+            estado=Publicacion.ESTADO_BORRADOR,
+            imagen_portada=archivo,
+        )
+
+        response = self.client.get(reverse('home:mostrar_imagen', args=[archivo.pk]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_media_root_no_expone_archivos_por_ruta_directa(self):
+        archivo = self.crear_archivo('privada.jpg')
+
+        from canaco import urls as project_urls
+
+        try:
+            with override_settings(DEBUG=True):
+                clear_url_caches()
+                importlib.reload(project_urls)
+                response = self.client.get(f'/media/{archivo.ruta.name}')
+                if response.streaming:
+                    b''.join(response.streaming_content)
+        finally:
+            clear_url_caches()
+            importlib.reload(project_urls)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_foto_de_perfil_solo_es_visible_para_su_propietario(self):
+        archivo = self.crear_archivo()
+        perfil = Perfil.objects.get(user=self.propietario)
+        perfil.foto_perfil = archivo
+        perfil.save(update_fields=['foto_perfil'])
+
+        self.client.force_login(self.otro_usuario)
+        self.assertEqual(
+            self.client.get(reverse('home:mostrar_imagen', args=[archivo.pk])).status_code,
+            404,
+        )
+
+        self.client.force_login(self.propietario)
+        response = self.client.get(reverse('home:mostrar_imagen', args=[archivo.pk]))
+        self.assertEqual(response.status_code, 200)
+        b''.join(response.streaming_content)
+
+    def test_rechaza_formatos_no_permitidos_y_archivos_inexistentes(self):
+        formato_invalido = self.crear_archivo('documento.txt', b'texto')
+        archivo_inexistente = Archivo.objects.create(
+            nombre='inexistente.jpg',
+            nombre_temporal='inexistente.jpg',
+            ruta='uploads/inexistente.jpg',
+        )
+        for archivo in (formato_invalido, archivo_inexistente):
+            Publicacion.objects.create(
+                titulo=f'Publicacion {archivo.pk}',
+                resumen='Resumen',
+                contenido='Contenido',
+                estado=Publicacion.ESTADO_PUBLICADO,
+                imagen_portada=archivo,
+            )
+
+        self.assertEqual(
+            self.client.get(reverse('home:mostrar_imagen', args=[formato_invalido.pk])).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.get(reverse('home:mostrar_imagen', args=[archivo_inexistente.pk])).status_code,
+            404,
+        )
+
+
+class RegistroPublicoTests(TestCase):
+    def test_registro_crea_usuario_y_actualiza_el_perfil_generado(self):
+        response = self.client.post(reverse('home:sign_up'), {
+            'username': 'registro_publico',
+            'email': 'registro@example.com',
+            'first_name': 'Registro',
+            'apellido_paterno': 'Paterno',
+            'apellido_materno': 'Materno',
+            'password1': 'ClaveSegura123!',
+            'password2': 'ClaveSegura123!',
+        })
+
+        self.assertRedirects(response, reverse('home:login'))
+        usuario = User.objects.get(username='registro_publico')
+        perfil = Perfil.objects.get(user=usuario)
+        self.assertEqual(usuario.email, 'registro@example.com')
+        self.assertEqual(usuario.last_name, 'Paterno Materno')
+        self.assertEqual(perfil.apellido_paterno, 'Paterno')
+        self.assertEqual(perfil.apellido_materno, 'Materno')
+        self.assertEqual(Perfil.objects.filter(user=usuario).count(), 1)
+
+    def test_registro_rechaza_contrasenas_distintas_sin_crear_usuario(self):
+        response = self.client.post(reverse('home:sign_up'), {
+            'username': 'registro_invalido',
+            'email': 'invalido@example.com',
+            'password1': 'ClaveSegura123!',
+            'password2': 'OtraClaveSegura123!',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Las contraseñas no coinciden.')
+        self.assertFalse(User.objects.filter(username='registro_invalido').exists())
+
+
+class PrivacidadTests(TestCase):
+    def test_pagina_de_privacidad_es_publica(self):
+        response = self.client.get(reverse('home:privacidad'))
+
+        self.assertEqual(response.status_code, 200)
+
+
+class LogoutTests(TestCase):
+    def setUp(self):
+        self.usuario = User.objects.create_user(
+            username='usuario_logout',
+            password='ClaveSegura123!',
+        )
+
+    def test_logout_rechaza_get_sin_cerrar_la_sesion(self):
+        self.client.force_login(self.usuario)
+
+        response = self.client.get(reverse('home:logout'))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.usuario.pk)
+
+    def test_logout_acepta_post_y_cierra_la_sesion(self):
+        self.client.force_login(self.usuario)
+
+        response = self.client.post(reverse('home:logout'))
+
+        self.assertRedirects(response, reverse('home:index'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_logout_post_conserva_proteccion_csrf(self):
+        cliente_csrf = Client(enforce_csrf_checks=True)
+        cliente_csrf.force_login(self.usuario)
+
+        response = cliente_csrf.post(reverse('home:logout'))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(int(cliente_csrf.session['_auth_user_id']), self.usuario.pk)

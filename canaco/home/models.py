@@ -23,13 +23,14 @@ null=True, blank=True)
     def display_url(self):
         if not self.ruta:
             return ''
+
         ruta = str(self.ruta)
+
         if ruta.startswith(('images/', 'css/', 'js/', 'fonts/', 'uploads/profile-default')):
             return f'/static/{ruta}'
-        try:
-            return self.ruta.url
-        except Exception:
-            return f'/media/{ruta}'
+
+        return f'/archivo/{self.pk}/imagen/'
+
            
 class Categoria(models.Model): 
     id = models.BigAutoField( 
