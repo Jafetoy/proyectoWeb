@@ -100,15 +100,47 @@ python -B .\canaco\manage.py test home.test_production --settings=canaco.setting
 
 ## Variables de entorno
 
-La conexión a la base de datos se configura desde `docker-compose.yml`:
+La configuración local se carga desde el archivo `.env` ubicado en la raíz del
+repositorio. El archivo está ignorado por Git y Docker; solamente se versiona
+`.env.example` con valores de ejemplo.
+
+Para preparar un entorno nuevo:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Generá valores distintos para `DJANGO_SECRET_KEY`, `MYSQL_PASSWORD` y
+`MYSQL_ROOT_PASSWORD`. No reutilices contraseñas personales o de producción.
+
+Variables disponibles:
 
 | Variable | Descripción |
 |---|---|
-| `DB_NAME` | Nombre de la base de datos |
-| `DB_USER` | Usuario de MySQL |
-| `DB_PASSWORD` | Contraseña del usuario |
-| `DB_HOST` | Host de la base de datos (`db`) |
-| `DB_PORT` | Puerto de MySQL (`3306`) |
+| `DJANGO_SECRET_KEY` | Clave criptográfica local de Django |
+| `DJANGO_DEBUG` | Activa o desactiva el modo de depuración |
+| `DJANGO_ALLOWED_HOSTS` | Hosts permitidos separados por comas |
+| `MYSQL_DATABASE` | Nombre de la base de datos local |
+| `MYSQL_USER` | Usuario local de MySQL |
+| `MYSQL_PASSWORD` | Contraseña del usuario local |
+| `MYSQL_ROOT_PASSWORD` | Contraseña administrativa local de MySQL |
+| `DB_HOST` | Host usado al ejecutar Django fuera de Docker |
+| `DB_PORT` | Puerto de MySQL |
+
+Los archivos Compose interpolan únicamente las variables que necesita cada
+servicio y no contienen credenciales literales. Iniciá el entorno local desde
+la raíz del repositorio:
+
+```powershell
+docker compose --env-file .env up -d
+```
+
+Para producción, copiá `.env.production.example` como `.env.production` en el
+servidor y ejecutá Compose indicando el archivo:
+
+```powershell
+docker compose --env-file .env.production -f compose.production.yaml up -d --build
+```
 
 ## Autor
 

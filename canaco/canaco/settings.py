@@ -10,22 +10,39 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = Path(os.environ.get('CANACO_ENV_FILE', BASE_DIR.parent / '.env'))
+load_dotenv(ENV_FILE, override=False)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-fmc)m+3cf^0+@igqtg+3yg8vs_=_9x(8+9vra14q^_n&18jny7'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set in the environment.')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').strip().lower() in {
+    '1', 'true', 'yes', 'on',
+}
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "web"]
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1,0.0.0.0,web',
+    ).split(',')
+    if host.strip()
+]
 
 
 # Application definition
@@ -75,14 +92,12 @@ WSGI_APPLICATION = 'canaco.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-import os
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("DB_NAME", "canaco_db"),
-        "USER": os.environ.get("DB_USER", "jafet"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "1234"),
+        "NAME": os.environ.get("DB_NAME") or os.environ.get("MYSQL_DATABASE", ""),
+        "USER": os.environ.get("DB_USER") or os.environ.get("MYSQL_USER", ""),
+        "PASSWORD": os.environ.get("DB_PASSWORD") or os.environ.get("MYSQL_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
         "PORT": os.environ.get("DB_PORT", "3306"),
     }

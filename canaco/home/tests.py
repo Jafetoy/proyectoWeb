@@ -215,6 +215,14 @@ class GlobalFooterContextTests(TestCase):
 
 
 class PortadasTests(TestCase):
+	def test_index_incluye_modal_de_bienvenida_y_su_script(self):
+		response = self.client.get(reverse('home:index'))
+
+		self.assertContains(response, 'id="modalBienvenida"')
+		self.assertContains(response, 'data-welcome-modal')
+		self.assertContains(response, reverse('home:categoria'))
+		self.assertContains(response, 'js/welcome-modal.js')
+
 	def test_index_muestra_las_cinco_publicaciones_mas_recientes(self):
 		ahora = timezone.now()
 		publicaciones = []

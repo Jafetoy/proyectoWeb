@@ -101,4 +101,37 @@
     </div>
   </div>
 </section>
+
+<div class="modal fade welcome-modal" id="modalBienvenida" data-welcome-modal tabindex="-1" aria-labelledby="modalBienvenidaLabel" aria-describedby="modalBienvenidaDescripcion" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content welcome-modal-content">
+      <div class="modal-header welcome-modal-header">
+        <div class="welcome-modal-heading">
+          <span class="welcome-modal-icon" aria-hidden="true">
+            <i class="bi bi-megaphone-fill"></i>
+          </span>
+          <div>
+            <h2 class="modal-title welcome-modal-title" id="modalBienvenidaLabel">Bienvenido a Canaco</h2>
+            <p class="welcome-modal-subtitle mb-0">Información que impulsa a nuestra comunidad empresarial.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body welcome-modal-body">
+        <p id="modalBienvenidaDescripcion">
+          Conoce las noticias, actividades y próximos eventos de la Cámara Nacional de Comercio.
+        </p>
+        <p class="mb-0">Explora las actualizaciones más recientes y mantente al día con el sector empresarial.</p>
+      </div>
+      <div class="modal-footer welcome-modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ahora no</button>
+        <a href="{% url 'home:categoria' %}" class="btn btn-primary">Ver noticias</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock content %}
+
+{% block extra_js %}
+  <script src="{% static 'js/welcome-modal.js' %}?v=1"></script>
+{% endblock extra_js %}

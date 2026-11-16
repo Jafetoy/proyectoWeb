@@ -4,16 +4,16 @@ services:
     container_name: canaco_mysql
     restart: always
     environment:
-      MYSQL_DATABASE: canaco_db
-      MYSQL_USER: jafet
-      MYSQL_PASSWORD: "1234"
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?required}
+      MYSQL_USER: ${MYSQL_USER:?required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?required}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u\"$${MYSQL_USER}\" -p\"$${MYSQL_PASSWORD}\""]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,11 +28,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DB_NAME=canaco_db
-      - DB_USER=jafet
-      - DB_PASSWORD=1234
-      - DB_HOST=db
-      - DB_PORT=3306
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?required}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,web}
+      DB_NAME: ${MYSQL_DATABASE:?required}
+      DB_USER: ${MYSQL_USER:?required}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?required}
+      DB_HOST: ${DOCKER_DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
     depends_on:
       db:
         condition: service_healthy

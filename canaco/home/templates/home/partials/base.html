@@ -56,7 +56,7 @@ function cargarGTM() {
   <link rel="stylesheet" href="{% static 'css/glightbox.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <link rel="stylesheet" href="{% static 'css/flatpickr.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/theme-custom.css' %}?v=canaco-editorial-5">
+  <link rel="stylesheet" href="{% static 'css/theme-custom.css' %}?v=canaco-editorial-6">
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}?v=canaco-editorial-3">
   <link rel="stylesheet" href="{% static 'css/components.css' %}?v=canaco-editorial-3">
 
@@ -88,6 +88,7 @@ function cargarGTM() {
   <script src="{% static 'js/navbar.js' %}"></script>
   <script src="{% static 'js/counter.js' %}"></script>
   <script src="{% static 'js/custom.js' %}?v=eye-toggle-1"></script>
+  {% block extra_js %}{% endblock extra_js %}
 
 <!-- Consentimiento de estadísticas de Canaco -->
 <style>
