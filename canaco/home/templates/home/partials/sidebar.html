@@ -3,7 +3,7 @@
 <aside class="panel-sidebar flex-shrink-0">
   <ul class="nav nav-pills nav-flush flex-column mb-auto text-start">
     <li class="nav-item">
-      <a href="{% url 'home:perfil' %}" class="nav-link panel-nav-link {% if current == 'perfil' or current == 'crud_perfil' %}active{% endif %}">
+      <a href="{% url 'home:perfil' %}" data-panel-ajax-link class="nav-link panel-nav-link {% if current == 'perfil' or current == 'crud_perfil' %}active{% endif %}"> {# AJAX habilitado para el contenido del panel #}
         <span>Mi Perfil</span>
       </a>
     </li>
@@ -13,17 +13,17 @@
       </a>
     </li>
     <li>
-      <a href="{% url 'home:crud_comentarios' %}" class="nav-link panel-nav-link {% if current == 'crud_comentarios' %}active{% endif %}">
+      <a href="{% url 'home:crud_comentarios' %}" data-panel-ajax-link class="nav-link panel-nav-link {% if current == 'crud_comentarios' %}active{% endif %}"> {# AJAX #}
         <span>Comentarios</span>
       </a>
     </li>
     <li>
-      <a href="{% url 'home:crud_categorias' %}" class="nav-link panel-nav-link {% if current == 'crud_categorias' or current == 'editar_categoria' %}active{% endif %}">
+      <a href="{% url 'home:crud_categorias' %}" data-panel-ajax-link class="nav-link panel-nav-link {% if current == 'crud_categorias' or current == 'editar_categoria' %}active{% endif %}"> {# AJAX #}
         <span>Categorías</span>
       </a>
     </li>
     <li>
-      <a href="{% url 'home:crud_usuarios' %}" class="nav-link panel-nav-link {% if current == 'crud_usuarios' or current == 'crear_usuario' %}active{% endif %}">
+      <a href="{% url 'home:crud_usuarios' %}" data-panel-ajax-link class="nav-link panel-nav-link {% if current == 'crud_usuarios' or current == 'crear_usuario' %}active{% endif %}"> {# AJAX #}
         <span>Usuarios</span>
       </a>
     </li>

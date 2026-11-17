@@ -3,6 +3,7 @@
 !.env.example
 !.env.production.example
 canaco_env/
+node_modules/
 __pycache__/
 *.py[cod]
 *.sqlite3

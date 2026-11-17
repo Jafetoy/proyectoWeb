@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Comentarios{% endblock %}
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4" data-panel-ajax> {# Sección habilitada para AJAX #}
 <h1 class="mb-4 text-center">Comentarios</h1>
 {% if messages %}
 {% for message in messages %}

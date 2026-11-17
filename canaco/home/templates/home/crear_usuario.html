@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="account-page">
+<div class="account-page" data-panel-ajax>  {# AJAX habilitado para el contenido del panel #}
   <div class="account-card">
     <h3>{% if usuario_editado %}Editar una cuenta{% else %}Crear una cuenta{% endif %}</h3>
     {% if usuario_editado %}

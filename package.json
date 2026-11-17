@@ -1,0 +1,11 @@
+{
+  "name": "canaco-frontend-tests",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:js",
+    "test:js": "node --test tests/js/panel-ajax.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "29.0.1"
+  }
+}

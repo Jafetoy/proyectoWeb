@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Editar Mi Perfil{% endblock %}
 {% block content %}
-<div class="profile-page">
+<div class="profile-page" data-panel-ajax> {# AJAX habilitado #}
 <div class="profile-edit-card">
 <h3>Editar mi perfil</h3>
 <p>Estos datos pertenecen a tu cuenta actual: <strong>{{ request.user.username }}</strong>.</p>

@@ -323,6 +323,65 @@ class EditarUsuarioPasswordTests(TestCase):
 		self.assertTrue(self.usuario.check_password('ClaveOriginal123!'))
 
 
+class PanelAjaxTemplatesTests(TestCase):
+	def setUp(self):
+		self.operador = User.objects.create_superuser(
+			username='operador_ajax',
+			email='operador_ajax@example.com',
+			password='ClaveSegura123!',
+		)
+		self.usuario = User.objects.create_user(
+			username='usuario_ajax',
+			password='ClaveSegura123!',
+		)
+		self.categoria = Categoria.objects.create(nombre='Categoría AJAX')
+		self.client.force_login(self.operador)
+
+	def test_vistas_del_panel_crud_incluyen_el_contenedor_ajax(self):
+		rutas = [
+			reverse('home:crud_categorias'),
+			reverse('home:crud_comentarios'),
+			reverse('home:crud_usuarios'),
+			reverse('home:crear_usuario'),
+			reverse('home:editar_categoria', args=[self.categoria.pk]),
+			reverse('home:editar_usuario', args=[self.usuario.pk]),
+		]
+
+		for ruta in rutas:
+			with self.subTest(ruta=ruta):
+				response = self.client.get(ruta)
+				self.assertEqual(response.status_code, 200)
+				self.assertContains(response, 'data-panel-ajax')
+				self.assertContains(response, 'js/panel-ajax.js')
+
+	def test_perfil_incluye_el_contenedor_ajax(self):
+		for ruta in (reverse('home:perfil'), reverse('home:crud_perfil')):
+			with self.subTest(ruta=ruta):
+				response = self.client.get(ruta)
+				self.assertEqual(response.status_code, 200)
+				self.assertContains(response, 'data-panel-ajax')
+				self.assertContains(response, 'js/panel-ajax.js')
+
+	def test_comentarios_ajax_no_aparecen_como_texto_visible(self):
+		rutas = [
+			reverse('home:perfil'),
+			reverse('home:crud_perfil'),
+			reverse('home:crud_categorias'),
+			reverse('home:crud_comentarios'),
+			reverse('home:crud_usuarios'),
+			reverse('home:crear_usuario'),
+			reverse('home:editar_categoria', args=[self.categoria.pk]),
+		]
+
+		for ruta in rutas:
+			with self.subTest(ruta=ruta):
+				response = self.client.get(ruta)
+				contenido = response.content.decode().lower()
+				self.assertNotIn('//ajax', contenido)
+				self.assertNotIn('//carga', contenido)
+				self.assertNotIn('//seleccion', contenido)
+
+
 class ArchivoDisplayUrlTests(TestCase):
     def test_usa_static_para_recursos_estaticos_y_ruta_protegida_para_subidas(self):
         estatico = Archivo(ruta='images/logo.png')
